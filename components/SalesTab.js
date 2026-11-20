@@ -17,7 +17,10 @@ export default function SalesTab() {
 
   // Live calculation states
   const [liveRevenue, setLiveRevenue] = useState(0);
+  const [liveFilamentCost, setLiveFilamentCost] = useState(0);
+  const [liveAdditionalCost, setLiveAdditionalCost] = useState(0);
   const [liveProfit, setLiveProfit] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -43,21 +46,25 @@ export default function SalesTab() {
       revenue += qty * price;
 
       // Calcular costo de filamento para el item
-      const weight = item.product.filamentWeight || 0;
+      const weight = Number(item.product.filamentWeight) || 0;
       const costPerKg = Number(filamentCostPerKg) || 0;
       const itemFilamentCost = weight * qty * (costPerKg / 1000);
       totalFilamentCost += itemFilamentCost;
 
       // Costo de elementos adicionales configurados en catálogo
       const itemAddCost = (item.product.additionalElements || []).reduce(
-        (sum, elem) => sum + (elem.price || 0), 0
+        (sum, elem) => sum + (Number(elem.price) || 0), 0
       ) * qty;
       totalAdditionalCost += itemAddCost;
     });
 
-    const netProfit = revenue - totalFilamentCost - totalAdditionalCost - (Number(additionalCost) || 0);
+    const manualExtra = Number(additionalCost) || 0;
+    const combinedAdditionalCost = totalAdditionalCost + manualExtra;
+    const netProfit = revenue - totalFilamentCost - combinedAdditionalCost;
 
     setLiveRevenue(revenue);
+    setLiveFilamentCost(totalFilamentCost);
+    setLiveAdditionalCost(combinedAdditionalCost);
     setLiveProfit(netProfit);
   }, [cart, filamentCostPerKg, additionalCost]);
 
@@ -118,13 +125,14 @@ export default function SalesTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
 
     if (cart.length === 0) {
       alert('El carrito está vacío.');
       return;
     }
 
-    if (!filamentCostPerKg) {
+    if (filamentCostPerKg === '' || filamentCostPerKg === null || filamentCostPerKg === undefined) {
       alert('Por favor ingresa el costo actual del filamento.');
       return;
     }
@@ -144,6 +152,7 @@ export default function SalesTab() {
     };
 
     try {
+      setSubmitting(true);
       const res = await fetch('/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -162,6 +171,8 @@ export default function SalesTab() {
     } catch (err) {
       console.error(err);
       alert('Error de conexión.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -215,6 +226,14 @@ export default function SalesTab() {
                   </button>
 
                   <span className="font-bold text-gray-800 pr-6 text-sm">{item.product.title}</span>
+                  <div className="text-[11px] text-gray-500 flex flex-wrap gap-x-2">
+                    <span>⚖️ {item.product.filamentWeight || 0}g</span>
+                    {item.product.additionalElements && item.product.additionalElements.length > 0 && (
+                      <span className="text-blue-600 font-medium">
+                        ➕ Adicionales: ${item.product.additionalElements.reduce((s, e) => s + (Number(e.price) || 0), 0).toLocaleString()} c/u
+                      </span>
+                    )}
+                  </div>
 
                   <div className="grid grid-cols-2 gap-2 mt-1">
                     <div>
@@ -285,27 +304,39 @@ export default function SalesTab() {
           </div>
 
           {/* Resumen en vivo de Ganancias */}
-          <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-1">
+          <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-1.5">
             <div className="flex justify-between items-center text-sm">
               <span className="text-blue-700">Ingreso Bruto:</span>
               <span className="font-bold text-blue-900">${liveRevenue.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center text-md font-bold">
+            {liveFilamentCost > 0 && (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-600">Costo Filamento:</span>
+                <span className="font-semibold text-red-600">-${Math.round(liveFilamentCost).toLocaleString()}</span>
+              </div>
+            )}
+            {liveAdditionalCost > 0 && (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-600">Costo Adicionales:</span>
+                <span className="font-semibold text-red-600">-${Math.round(liveAdditionalCost).toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center text-md font-bold pt-1 border-t border-blue-200/60">
               <span className="text-green-700 flex items-center gap-1">
                 <DollarSign size={16} /> Ganancia Neta:
               </span>
-              <span className={`text-green-950 font-black text-lg ${liveProfit < 0 ? 'text-red-600' : ''}`}>
-                ${liveProfit.toLocaleString()}
+              <span className={`font-black text-lg ${liveProfit < 0 ? 'text-red-600' : 'text-green-950'}`}>
+                ${Math.round(liveProfit).toLocaleString()}
               </span>
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || submitting}
             className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:bg-gray-200 disabled:text-gray-400"
           >
-            Registrar Venta
+            {submitting ? 'Registrando...' : 'Registrar Venta'}
           </button>
         </form>
       </div>

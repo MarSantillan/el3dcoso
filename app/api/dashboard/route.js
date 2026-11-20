@@ -25,8 +25,8 @@ export async function GET() {
       totalExpenses += exp.amount || 0;
     });
 
-    // Balance General
-    const netBalance = totalNetProfitFromSales - totalExpenses;
+    // Flujo de Caja (Ventas Brutas - Egresos totales, sin restar doble los insumos)
+    const cashFlow = totalRevenue - totalExpenses;
 
     // 3. Pedidos pendientes
     const pendingOrders = await Order.find({ status: 'Pendiente' })
@@ -57,7 +57,8 @@ export async function GET() {
       totalRevenue,
       totalNetProfitFromSales,
       totalExpenses,
-      netBalance,
+      cashFlow,
+      netBalance: totalNetProfitFromSales,
       pendingOrdersCount: pendingOrders.length,
       stockAlerts
     });

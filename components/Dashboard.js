@@ -37,12 +37,12 @@ export default function Dashboard({ setActiveTab }) {
       {/* Saludo y Balance */}
       <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl text-white shadow-lg space-y-4">
         <div>
-          <span className="text-xs text-blue-100 font-semibold tracking-wide uppercase">Balance General Neto</span>
+          <span className="text-xs text-blue-100 font-semibold tracking-wide uppercase">Ganancia Neta de Ventas</span>
           <h2 className="text-4xl font-black mt-1">
-            ${Math.round(stats.netBalance).toLocaleString()}
+            ${Math.round(stats.totalNetProfitFromSales).toLocaleString()}
           </h2>
           <p className="text-xs text-blue-200 mt-1">
-            Ganancia Neta Ventas - Egresos totales
+            Ventas menos costos de filamento y adicionales
           </p>
         </div>
 
@@ -52,8 +52,10 @@ export default function Dashboard({ setActiveTab }) {
             <span className="text-base font-bold">${Math.round(stats.totalRevenue).toLocaleString()}</span>
           </div>
           <div>
-            <span className="text-blue-200 block">Ganancia Neta Ventas</span>
-            <span className="text-base font-bold">${Math.round(stats.totalNetProfitFromSales).toLocaleString()}</span>
+            <span className="text-blue-200 block">Flujo de Caja (Ventas - Egresos)</span>
+            <span className={`text-base font-bold ${stats.cashFlow < 0 ? 'text-red-200' : ''}`}>
+              ${Math.round(stats.cashFlow).toLocaleString()}
+            </span>
           </div>
         </div>
       </div>

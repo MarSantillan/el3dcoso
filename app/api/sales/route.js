@@ -44,7 +44,7 @@ export async function POST(request) {
       totalFilamentCost += itemFilamentCost;
 
       const itemAdditionalCost = (productData.additionalElements || []).reduce(
-        (sum, elem) => sum + (elem.price || 0), 0
+        (sum, elem) => sum + (Number(elem.price) || 0), 0
       ) * quantity;
       totalProductsAdditionalCost += itemAdditionalCost;
     }

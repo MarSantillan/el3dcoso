@@ -19,6 +19,7 @@ export default function ProductsTab() {
   // Dynamic additional element form states
   const [elemName, setElemName] = useState('');
   const [elemPrice, setElemPrice] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -77,10 +78,12 @@ export default function ProductsTab() {
   };
 
   const addAdditionalElement = () => {
-    if (!elemName.trim() || !elemPrice) return;
+    if (!elemName.trim() && elemPrice === '') return;
+    const parsedPrice = Number(elemPrice);
+    if (isNaN(parsedPrice) || parsedPrice < 0) return;
     setAdditionalElements([
       ...additionalElements,
-      { name: elemName.trim(), price: Number(elemPrice) }
+      { name: elemName.trim() || 'Adicional', price: parsedPrice }
     ]);
     setElemName('');
     setElemPrice('');
@@ -95,6 +98,8 @@ export default function ProductsTab() {
     setFilamentWeight('');
     setPrintTime('');
     setAdditionalElements([]);
+    setElemName('');
+    setElemPrice('');
     setPhoto(null);
     setIsEditing(false);
     setCurrentId(null);
@@ -102,16 +107,30 @@ export default function ProductsTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+
+    // Si el usuario escribió un elemento adicional y no presionó "+ Agregar Elemento", incluirlo automáticamente
+    const finalAdditionalElements = [...additionalElements];
+    if (elemName.trim() || elemPrice !== '') {
+      const parsedPrice = Number(elemPrice) || 0;
+      if (elemName.trim() || parsedPrice > 0) {
+        finalAdditionalElements.push({
+          name: elemName.trim() || 'Adicional',
+          price: parsedPrice
+        });
+      }
+    }
 
     const productPayload = {
       title: title.trim(),
       filamentWeight: Number(filamentWeight),
       printTime: printTime ? Number(printTime) : null,
-      additionalElements,
+      additionalElements: finalAdditionalElements,
       photo
     };
 
     try {
+      setSubmitting(true);
       const url = isEditing ? `/api/products/${currentId}` : '/api/products';
       const method = isEditing ? 'PUT' : 'POST';
 
@@ -130,6 +149,8 @@ export default function ProductsTab() {
       }
     } catch (err) {
       console.error('Error saving product:', err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -140,6 +161,8 @@ export default function ProductsTab() {
     setFilamentWeight(prod.filamentWeight);
     setPrintTime(prod.printTime || '');
     setAdditionalElements(prod.additionalElements || []);
+    setElemName('');
+    setElemPrice('');
     setPhoto(prod.photo || null);
     // Hacer scroll al formulario
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -293,9 +316,10 @@ export default function ProductsTab() {
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors"
+              disabled={submitting}
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:bg-gray-300"
             >
-              {isEditing ? 'Guardar Cambios' : 'Crear Producto'}
+              {submitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Producto'}
             </button>
             {isEditing && (
               <button

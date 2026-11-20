@@ -12,6 +12,7 @@ export default function ExpensesTab() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Otros');
   const [expenseDate, setExpenseDate] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchExpenses();
@@ -35,6 +36,7 @@ export default function ExpensesTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
 
     if (!description.trim() || !amount) {
       alert('Descripción y Monto son obligatorios.');
@@ -49,6 +51,7 @@ export default function ExpensesTab() {
     };
 
     try {
+      setSubmitting(true);
       const res = await fetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,6 +71,8 @@ export default function ExpensesTab() {
     } catch (err) {
       console.error(err);
       alert('Error de conexión.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -158,9 +163,10 @@ export default function ExpensesTab() {
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-colors"
+            disabled={submitting}
+            className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-colors disabled:bg-gray-300"
           >
-            Registrar Egreso
+            {submitting ? 'Registrando...' : 'Registrar Egreso'}
           </button>
         </form>
       </div>
