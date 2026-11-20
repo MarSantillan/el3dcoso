@@ -28,31 +28,60 @@ export async function POST(request) {
     let totalRevenue = 0;
     let totalFilamentCost = 0;
     let totalProductsAdditionalCost = 0;
+    const normalizedProducts = [];
 
     for (const item of products) {
-      const productData = await Product.findById(item.product);
-      if (!productData) {
-        return NextResponse.json({ error: `Producto con ID ${item.product} no encontrado` }, { status: 404 });
-      }
-
       const quantity = Number(item.quantity);
       const soldPrice = Number(item.soldPrice);
-      
+
       totalRevenue += quantity * soldPrice;
 
-      const itemFilamentCost = productData.filamentWeight * quantity * (filamentCostPerKg / 1000);
-      totalFilamentCost += itemFilamentCost;
+      if (item.product) {
+        const productData = await Product.findById(item.product);
+        if (!productData) {
+          return NextResponse.json({ error: `Producto con ID ${item.product} no encontrado` }, { status: 404 });
+        }
 
-      const itemAdditionalCost = (productData.additionalElements || []).reduce(
-        (sum, elem) => sum + (Number(elem.price) || 0), 0
-      ) * quantity;
-      totalProductsAdditionalCost += itemAdditionalCost;
+        const itemFilamentCost = productData.filamentWeight * quantity * (filamentCostPerKg / 1000);
+        totalFilamentCost += itemFilamentCost;
+
+        const itemAdditionalCost = (productData.additionalElements || []).reduce(
+          (sum, elem) => sum + (Number(elem.price) || 0), 0
+        ) * quantity;
+        totalProductsAdditionalCost += itemAdditionalCost;
+
+        normalizedProducts.push({
+          product: item.product,
+          quantity,
+          soldPrice
+        });
+      } else {
+        const customTitle = (item.customTitle || '').trim();
+        if (!customTitle) {
+          return NextResponse.json({ error: 'El nombre del producto personalizado es obligatorio' }, { status: 400 });
+        }
+
+        const customFilamentWeight = Number(item.customFilamentWeight) || 0;
+        const customAdditionalCost = Number(item.customAdditionalCost) || 0;
+
+        totalFilamentCost += customFilamentWeight * quantity * (filamentCostPerKg / 1000);
+        totalProductsAdditionalCost += customAdditionalCost * quantity;
+
+        normalizedProducts.push({
+          product: null,
+          customTitle,
+          customFilamentWeight,
+          customAdditionalCost,
+          quantity,
+          soldPrice
+        });
+      }
     }
 
     const netProfit = totalRevenue - totalFilamentCost - totalProductsAdditionalCost - Number(additionalCost);
 
     const saleData = {
-      products,
+      products: normalizedProducts,
       filamentCostPerKg,
       totalRevenue,
       netProfit,

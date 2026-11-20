@@ -10,7 +10,22 @@ const SaleSchema = new mongoose.Schema({
       product: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
-        required: true,
+        default: null,
+      },
+      customTitle: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      customFilamentWeight: {
+        type: Number,
+        default: 0,
+        min: [0, 'El peso del filamento no puede ser negativo.'],
+      },
+      customAdditionalCost: {
+        type: Number,
+        default: 0,
+        min: [0, 'El costo adicional no puede ser negativo.'],
       },
       quantity: {
         type: Number,

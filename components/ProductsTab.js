@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Camera, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Camera, Image as ImageIcon, X } from 'lucide-react';
 
 export default function ProductsTab() {
   const [products, setProducts] = useState([]);
@@ -75,6 +75,7 @@ export default function ProductsTab() {
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const addAdditionalElement = () => {
@@ -285,10 +286,21 @@ export default function ProductsTab() {
           {/* Foto */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Foto del producto</label>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors text-sm text-gray-600 bg-white">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1.5 px-3.5 py-2 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors text-sm text-blue-700 bg-blue-50/40 font-medium">
                 <Camera size={18} />
-                <span>Elegir / Tomar Foto</span>
+                <span>Sacar Foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
+              <label className="flex items-center gap-1.5 px-3.5 py-2 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors text-sm text-gray-600 bg-white font-medium">
+                <ImageIcon size={18} />
+                <span>Galería</span>
                 <input
                   type="file"
                   accept="image/*"
